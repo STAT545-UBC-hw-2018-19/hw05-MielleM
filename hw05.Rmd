@@ -1,0 +1,273 @@
+---
+title: "hw05: Factor management and visualization"
+author: "MielleM"
+output:
+  github_document:
+    toc: true
+    toc_depth: 4
+---
+
+## Getting started 
+
+```{r getting started}
+suppressPackageStartupMessages(library(gapminder))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(plotly))
+
+```
+  
+## Part 1: Factor management 
+#### Am I working with factors?
+
+```{r test if continent is factor}
+is.factor(gapminder$continent)
+is.factor(gapminder$country)
+
+glimpse(gapminder)
+```
+Yes, looks like both continent and country are factors. Using glimpse, I can confirm that those are the only two factors in the gapminder tibble which contains 1,704 observations of six variables. 
+
+#### Drop factors and levels: Oceania
+
+First, I'll remove the continent Oceania. It only contains two countries which makes it a less interesting comparison than the other continents. I'm going to skip some piping here even though it will make the code slightly longer, because I want to separate the data manipulation from the sanity checks.  
+```{r remove Oceania entries}
+# remove Oceania
+drop_ocea <- gapminder %>% 
+  filter(continent != "Oceania")
+
+# check the number of rows
+glimpse(drop_ocea)
+
+# check levels of continent factor
+unique(drop_ocea$continent)
+```
+
+from glimpse(), I can see that the tibble now only contains 1,680 observations, so we have successfully removed rows. From unique(), I can see that it is the Oceania entries that have been removed from the dataset but Oceania remains a level in the factor. 
+
+```{r remove Oceania as a factor level}
+# remove Oceania factor level
+no_ocea <- drop_ocea %>%
+  mutate(continent = fct_drop(continent))
+
+# check if Oceania remains as a factor level
+is.factor(no_ocea$continent)
+unique(no_ocea$continent)
+```
+
+Great, looks like continent is still a factor and now Oceania has been removed as a level. For my check, I decided against using str() because it provides too much information when, as in this case, I have fairly targeted questions about the data. 
+
+
+#### Reorder levels based on the data
+
+
+As we can see from unique() above, the columns are ordered alphabetically, which is pretty arbitrary. I'm going to reorder the continents by standard deviation and pipe this into a violin plot.
+
+```{r order violin plot by continent standard deviation of population}
+no_ocea %>% 
+  mutate(continent = fct_reorder(continent, pop, .fun = sd)) %>% # reorder by standard deviation
+  ggplot(aes(continent, pop, fill = continent)) +
+  scale_y_log10() + # logarithmic y scale
+  geom_violin() +
+  labs(title = "Country-level population by continent, 1952 - 2007",
+       subtitle = "Continents ordered from lowest to highest population standard deviation",
+       x = "Continent",
+       y = "Population")
+
+```
+
+We can also create a graph ordered by minimum population. 
+
+```{r order violin plot by continent minimum population}
+no_ocea %>% 
+  mutate(continent = fct_reorder(continent, pop, .fun = min)) %>% # reorder by minimum population
+  ggplot(aes(continent, pop, fill = continent)) +
+  scale_y_log10() + # logarithmic y scale
+  geom_violin() +
+  labs(title = "Country-level population by continent, 1952 - 2007",
+       subtitle = "Continents ordered from lowest to highest minimum population",
+       x = "Continent",
+       y = "Population")
+
+```
+
+This demonstrates something about the way ggplot2 assigns fill colors-- they're clearly linked to the order that variables will be plotted (e.g. the first entry will always be pink), not something inherent to the data. 
+
+
+## Part 2: File I/O
+
+#### Export data to .csv
+
+Before I write the data frame to a csv, let's filter to get a more reasonable data set to work with. I'm going to filter to the Americas only, with data at 10 year intervals instead of 5. 
+
+```{r filter americas data at 10 year intervals}
+
+amer_7 <- gapminder %>% 
+  filter(continent == "Americas") %>% 
+  filter(str_detect(year, "7$"))  # filter year ending in 7
+  
+amer_7 %>% 
+  ggplot(aes(country, lifeExp)) +
+  geom_point() +
+  coord_flip() + #flip axes to display labels better
+  labs(title = "Life expectancy in the Americas, 1957-2007",
+       x = "Life expectancy",
+       y = "Country") +
+  theme_light()
+```
+
+When I plot the filtered data, it displays alphabetically -- not super helpful for understanding trends in the data. 
+
+I'm going to order the country data by median life expectancy to get a better idea of overall trends. 
+
+```{r order country by median life expectancy}
+amer_7_ord <- amer_7 %>%   
+  mutate(country = fct_reorder(country, lifeExp, .fun = median))  # reorder country by median lifeExp
+
+amer_7_ord %>% 
+  ggplot(aes(country, lifeExp)) +
+  geom_point() +
+  coord_flip() +
+  labs(title = "Life expectancy in the Americas, 1957-2007",
+       x = "Life expectancy",
+       y = "Country") +
+  theme_light()
+```
+
+This plot is way more helpful! 
+
+Now, let's experiment with exporting the data frame I've created to a .csv. Will the ordering be preserved if I re-import and plot it? 
+
+```{r export amer_7_ord to .csv}
+write_csv(amer_7_ord, "amer_7_ord.csv") 
+```
+
+I'm going to re-import the same .csv and plot it in the same way to see if it retains the ordering. 
+
+```{r re-import csv, test if order the same}
+read_csv("amer_7_ord.csv") %>%  #import .csv
+  ggplot(aes(country, lifeExp)) +
+  geom_point() +
+  coord_flip() +
+  labs(title = "Life expectancy in the Americas, 1957-2007",
+       x = "Life expectancy",
+       y = "Country") +
+  theme_light()
+  
+
+```
+
+Nope, the ordering is not preserved by the .csv. 
+
+#### Export data to RDS
+
+Let's try using `saveRDS()` and `readRDS()`, and use identical() to test if the files are the same. If you want to run this segment of the code at home, you'll need to specify a different file directory for the output. 
+
+```{r save/read RDS}
+saveRDS(amer_7_ord, '/Users/miellemichaux/Documents/STAT54X/hw05/amer_7_ord.rds') #export to RDS
+
+amer_7_ordRDS <- readRDS('/Users/miellemichaux/Documents/STAT54X/hw05/amer_7_ord.rds') #import same RDS
+
+identical(amer_7_ord, amer_7_ordRDS) #test if two files are the same 
+
+```
+Yes, the files appear to be the same, but I'll plot the imported RDS just to be sure. 
+
+```{r plot RDS import}
+amer_7_ordRDS  %>% 
+  ggplot(aes(country, lifeExp)) +
+  geom_point() +
+  coord_flip() +
+  labs(title = "Life expectancy in the Americas, 1957-2007",
+       x = "Life expectancy",
+       y = "Country") +
+  theme_light()
+```
+
+To summarize: RDS exports and imports preserve the factor order, but writing to a .csv does not. 
+
+
+## Part 3: Visualization design
+> Remake at least one figure or create a new one, in light of something you learned in the recent class meetings about visualization design and color. Maybe juxtapose your first attempt and what you obtained after some time spent working on it. Reflect on the differences. If using Gapminder, you can use the country or continent color scheme that ships with Gapminder. Consult the dimensions listed in All the Graph Things.
+
+http://stat545.com/graph00_index.html
+
+> Then, make a new graph by converting this visual (or another, if you'd like) to a plotly graph. What are some things that plotly makes possible, that are not possible with a regular ggplot2 graph?
+
+```{r Original plot of life expectancy in the Americas (lifeExp by country) KIND OF NOT REALLY}
+amer_7_ord %>% 
+  ggplot(aes(lifeExp, country)) +
+  geom_point() +
+  coord_flip() +
+  labs(title = "Life expectancy in the Americas, 1957-2007",
+       x = "Life expectancy",
+       y = "Country") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) #flip x axis labels
+```
+
+
+
+```{r}
+amer_7_ord %>% 
+  plot_ly(x = ~country, 
+        y = ~lifeExp, 
+        type = "scatter",
+        mode = "markers",
+        opacity = 0.2) %>% 
+    layout(xaxis = list())
+```
+Plotly adds an empty Afghanistan entry here-- perhaps because it's still an empty factor level in this dataset. 
+
+Let's try using factor_drop() to remove empty factor levels. 
+
+```{r}
+americas <- amer_7_ord %>% 
+  mutate(country = fct_drop(country))
+
+unique(americas$country)
+```
+
+```{r}
+americas %>% 
+  plot_ly(x = ~country, 
+        y = ~lifeExp, 
+        type = "scatter",
+        mode = "markers",
+        hoverinfo = 'text',
+        text = ~paste('Life expectancy: ', lifeExp)) %>% # custom hover text
+    layout(yaxis = list(hoverformat = '.1f')) # trying to get number of hoever decimals down but not working
+```
+
+
+
+
+### MAKE AN INTERACTIVE MAP??? oooo
+
+[plot_ly cheat sheet](https://images.plot.ly/plotly-documentation/images/r_cheat_sheet.pdf)
+
+[plot_ly help](https://www.rdocumentation.org/packages/plotly/versions/4.8.0)
+
+## Part 4: Writing figures to file
+
+Use ggsave() to explicitly save a plot to file. Then use ![Alt text] (/path/to/img.png) to load and embed it in your report. You can play around with various options, such as:
+
+    Arguments of ggsave(), such as width, height, resolution or text scaling.
+    Various graphics devices, e.g. a vector vs. raster format.
+    Explicit provision of the plot object p via ggsave(..., plot = p). Show a situation in which this actually matters.
+
+
+
+
+
+## Thanks! 
+
+- [tidyverse cheat sheet](https://www.rstudio.com/resources/cheatsheets/)
+- [forcats guide](https://www.rdocumentation.org/packages/forcats/versions/0.3.0/topics/fct_reorder)
+- [filter help](https://sebastiansauer.github.io/dplyr_filter/)
+- [flip graph axis](https://stackoverflow.com/questions/1330989/rotating-and-spacing-axis-labels-in-ggplot2)
+- [RDS help](https://stackoverflow.com/questions/23721750/behavior-of-saverds-and-readrds-in-regard-to-objects-attributes)
+- [ggplot2 label rotation](https://stackoverflow.com/questions/1330989/rotating-and-spacing-axis-labels-in-ggplot2)
+- [plotly annotations](https://plot.ly/r/text-and-annotations/)
+
+
+
