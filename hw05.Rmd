@@ -193,21 +193,7 @@ http://stat545.com/graph00_index.html
 
 > Then, make a new graph by converting this visual (or another, if you'd like) to a plotly graph. What are some things that plotly makes possible, that are not possible with a regular ggplot2 graph?
 
-```{r Original plot of life expectancy in the Americas (lifeExp by country) KIND OF NOT REALLY}
-amer_7_ord %>% 
-  ggplot(aes(lifeExp, country)) +
-  geom_point() +
-  coord_flip() +
-  labs(title = "Life expectancy in the Americas, 1957-2007",
-       x = "Life expectancy",
-       y = "Country") +
-  theme_light() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) #flip x axis labels
-```
-
-
-
-```{r}
+```{r initial use of plotly to graph life expectancy in the Americas}
 amer_7_ord %>% 
   plot_ly(x = ~country, 
         y = ~lifeExp, 
@@ -220,32 +206,130 @@ Plotly adds an empty Afghanistan entry here-- perhaps because it's still an empt
 
 Let's try using factor_drop() to remove empty factor levels. 
 
-```{r}
+```{r remove empty factor levels from Americas data}
 americas <- amer_7_ord %>% 
   mutate(country = fct_drop(country))
 
 unique(americas$country)
 ```
 
-```{r}
+
+
+```{r Original plot of life expectancy in the Americas (lifeExp by country) KIND OF NOT REALLY}
+amer_7_ord %>% 
+  ggplot(aes(lifeExp, country)) +
+  geom_point() +
+  coord_flip() +
+  labs(title = "Life expectancy in the Americas, 1957-2007",
+       x = "Life expectancy",
+       y = "Country") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) #flip x axis labels
+```
+
+```{r ggplotly to make ggplot into plotly}
+ggplotly(amer_7_ord %>% 
+  ggplot(aes(lifeExp, country)) +
+  geom_point() +
+  coord_flip() +
+  labs(title = "Life expectancy in the Americas, 1957-2007",
+       x = "Life expectancy",
+       y = "Country") +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 270, hjust = 1)) +
+  theme(panel.grid = element_blank(),
+        panel.border = element_blank(),
+        axis.ticks = element_blank()))
+    
+```
+
+
+
+```{r same americas plot but using plotly syntax instead of ggplotly}
 americas %>% 
   plot_ly(x = ~country, 
-        y = ~lifeExp, 
+        y = ~lifeExp,
         type = "scatter",
         mode = "markers",
         hoverinfo = 'text',
-        text = ~paste('Life expectancy: ', lifeExp)) %>% # custom hover text
-    layout(yaxis = list(hoverformat = '.1f')) # trying to get number of hoever decimals down but not working
+        text = ~paste(country, '', lifeExp), # custom hover text
+        yaxis = list(hoverformat = '.2f')) # trying to get number of hover decimals down but not working
 ```
 
 
 
 
-### MAKE AN INTERACTIVE MAP??? oooo
+```{r set up Americas life expectancy data, geographic data}
 
-[plot_ly cheat sheet](https://images.plot.ly/plotly-documentation/images/r_cheat_sheet.pdf)
+world <- map_data("world")
 
-[plot_ly help](https://www.rdocumentation.org/packages/plotly/versions/4.8.0)
+americas07 <-gapminder %>%
+  filter(year == 2007) %>%
+  filter(continent == "Americas") %>% 
+  rename(region = country) %>% 
+  mutate(region = as.character(region)) %>% #change "region" from factor to character 
+  mutate(region = ifelse(region == "United States", "USA", region))
+
+americasgeog <- right_join(world, americas07, by = "region") #join world geographic data to north america data
+
+```
+
+```{r interactive map of life expectancy in the Americas, using ggplotly}
+
+
+ggAmap <- ggplot() + 
+  geom_polygon(data = americasgeog, aes(x=long, y = lat, group = group, fill = lifeExp)) +
+  coord_map("mollweide") + # set projection
+  scale_fill_distiller(palette = 4, direction = 1, "Life\nexpectancy") + #setting color scheme and legend title
+  theme_void() +
+  theme(panel.grid = element_blank()) + # remove x axis bar
+  ggtitle("Life expectancy in the Americas, 2007")
+
+ggplotly(ggAmap, tooltip = )
+
+```
+
+
+```{r choropleth map USA}
+geogusa <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'))
+
+plot_geo() %>% 
+  add_trace(
+    z = ~density, text = state.name,
+    locations = state.abb, locationmode = 'USA-states'
+  ) %>% 
+    add_markers(
+    x = state.center[["x"]], y = state.center[["y"]], 
+    size = I(2), symbol = I(8), color = I("white"), hoverinfo = "none"
+  ) %>%
+  layout(geo = geogusa)
+
+
+```
+
+
+```{r choropleth map americas}
+g <- list(
+  scope = c('canada', 'usa', 'mexico'),
+  projection = list(type = 'mercator'))
+
+plot_geo() %>% 
+  add_trace(
+    z = ~americas$lifeExp,
+    locations = , locationmode = "country names") %>% 
+
+layout(geo = g)
+ 
+#text = americas$lifeExp,
+```
+
+
+
+
+
+
 
 ## Part 4: Writing figures to file
 
@@ -268,6 +352,10 @@ Use ggsave() to explicitly save a plot to file. Then use ![Alt text] (/path/to/i
 - [RDS help](https://stackoverflow.com/questions/23721750/behavior-of-saverds-and-readrds-in-regard-to-objects-attributes)
 - [ggplot2 label rotation](https://stackoverflow.com/questions/1330989/rotating-and-spacing-axis-labels-in-ggplot2)
 - [plotly annotations](https://plot.ly/r/text-and-annotations/)
+- [customization of ggplot2 themes](https://rpubs.com/tgwilson/ggplot-meets-lea-pica-and-domo)
+- [customizing plotly maps](https://stackoverflow.com/questions/50007258/plotly-australia-choropleth-map?rq=1)
+- [plot_ly cheat sheet](https://images.plot.ly/plotly-documentation/images/r_cheat_sheet.pdf)
+- [plot_ly help](https://www.rdocumentation.org/packages/plotly/versions/4.8.0)
 
 
-
+(ggplotly hover labels assistance)[https://stackoverflow.com/questions/34605919/formatting-mouse-over-labels-in-plotly-when-using-ggplotly]
