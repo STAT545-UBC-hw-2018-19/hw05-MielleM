@@ -276,16 +276,22 @@ americasgeog <- right_join(world, americas07, by = "region") #join world geograp
 
 ```{r interactive map of life expectancy in the Americas, using ggplotly}
 
-
-ggAmap <- ggplot() + 
-  geom_polygon(data = americasgeog, aes(x=long, y = lat, group = group, fill = lifeExp)) +
+gg <- ggplot() + 
+  geom_polygon(data = americasgeog,
+               aes(x=long,
+                   y = lat,
+                   group = group,
+                   fill = lifeExp,
+                   text = paste(region, "</b> \n", lifeExp, "years"))) + #set hover text
   coord_map("mollweide") + # set projection
   scale_fill_distiller(palette = 4, direction = 1, "Life\nexpectancy") + #setting color scheme and legend title
   theme_void() +
   theme(panel.grid = element_blank()) + # remove x axis bar
   ggtitle("Life expectancy in the Americas, 2007")
 
-ggplotly(ggAmap, tooltip = )
+ggplotly(gg, tooltip = "text") #hover labels life expectancy
+
+NEXT UP: make legend nicer, maybe change text, try more to get significant digits down to 1
 
 ```
 
@@ -354,8 +360,6 @@ Use ggsave() to explicitly save a plot to file. Then use ![Alt text] (/path/to/i
 - [plotly annotations](https://plot.ly/r/text-and-annotations/)
 - [customization of ggplot2 themes](https://rpubs.com/tgwilson/ggplot-meets-lea-pica-and-domo)
 - [customizing plotly maps](https://stackoverflow.com/questions/50007258/plotly-australia-choropleth-map?rq=1)
-- [plot_ly cheat sheet](https://images.plot.ly/plotly-documentation/images/r_cheat_sheet.pdf)
-- [plot_ly help](https://www.rdocumentation.org/packages/plotly/versions/4.8.0)
-
-
-(ggplotly hover labels assistance)[https://stackoverflow.com/questions/34605919/formatting-mouse-over-labels-in-plotly-when-using-ggplotly]
+- [plotly cheat sheet](https://images.plot.ly/plotly-documentation/images/r_cheat_sheet.pdf)
+- [plotly help](https://www.rdocumentation.org/packages/plotly/versions/4.8.0)
+- [ggplotly hover labels assistance](https://blog.cpsievert.me/2018/01/30/learning-improving-ggplotly-geom-sf/)
