@@ -2,7 +2,7 @@
 title: "hw05: Factor management and visualization"
 author: "MielleM"
 output:
-  github_document:
+  html_document:
     toc: true
     toc_depth: 4
 ---
@@ -13,7 +13,8 @@ output:
 suppressPackageStartupMessages(library(gapminder))
 suppressPackageStartupMessages(library(tidyverse))
 suppressPackageStartupMessages(library(plotly))
-
+suppressPackageStartupMessages(library(maps))
+library(extrafont)
 ```
   
 ## Part 1: Factor management 
@@ -64,9 +65,9 @@ As we can see from unique() above, the columns are ordered alphabetically, which
 
 ```{r order violin plot by continent standard deviation of population}
 no_ocea %>% 
-  mutate(continent = fct_reorder(continent, pop, .fun = sd)) %>% # reorder by standard deviation
+  mutate(continent = fct_reorder(continent, pop, .fun = sd)) %>% 
   ggplot(aes(continent, pop, fill = continent)) +
-  scale_y_log10() + # logarithmic y scale
+  scale_y_log10() + 
   geom_violin() +
   labs(title = "Country-level population by continent, 1952 - 2007",
        subtitle = "Continents ordered from lowest to highest population standard deviation",
@@ -79,9 +80,9 @@ We can also create a graph ordered by minimum population.
 
 ```{r order violin plot by continent minimum population}
 no_ocea %>% 
-  mutate(continent = fct_reorder(continent, pop, .fun = min)) %>% # reorder by minimum population
+  mutate(continent = fct_reorder(continent, pop, .fun = min)) %>% 
   ggplot(aes(continent, pop, fill = continent)) +
-  scale_y_log10() + # logarithmic y scale
+  scale_y_log10() + 
   geom_violin() +
   labs(title = "Country-level population by continent, 1952 - 2007",
        subtitle = "Continents ordered from lowest to highest minimum population",
@@ -103,12 +104,12 @@ Before I write the data frame to a csv, let's filter to get a more reasonable da
 
 amer_7 <- gapminder %>% 
   filter(continent == "Americas") %>% 
-  filter(str_detect(year, "7$"))  # filter year ending in 7
+  filter(str_detect(year, "7$"))
   
 amer_7 %>% 
   ggplot(aes(country, lifeExp)) +
   geom_point() +
-  coord_flip() + #flip axes to display labels better
+  coord_flip() + #flip axes
   labs(title = "Life expectancy in the Americas, 1957-2007",
        x = "Life expectancy",
        y = "Country") +
@@ -163,11 +164,11 @@ Nope, the ordering is not preserved by the .csv.
 Let's try using `saveRDS()` and `readRDS()`, and use identical() to test if the files are the same. If you want to run this segment of the code at home, you'll need to specify a different file directory for the output. 
 
 ```{r save/read RDS}
-saveRDS(amer_7_ord, '/Users/miellemichaux/Documents/STAT54X/hw05/amer_7_ord.rds') #export to RDS
+saveRDS(amer_7_ord, '/Users/miellemichaux/Documents/STAT54X/hw05/amer_7_ord.rds') 
 
-amer_7_ordRDS <- readRDS('/Users/miellemichaux/Documents/STAT54X/hw05/amer_7_ord.rds') #import same RDS
+amer_7_ordRDS <- readRDS('/Users/miellemichaux/Documents/STAT54X/hw05/amer_7_ord.rds') 
 
-identical(amer_7_ord, amer_7_ordRDS) #test if two files are the same 
+identical(amer_7_ord, amer_7_ordRDS) 
 
 ```
 Yes, the files appear to be the same, but I'll plot the imported RDS just to be sure. 
@@ -189,75 +190,56 @@ To summarize: RDS exports and imports preserve the factor order, but writing to 
 ## Part 3: Visualization design
 > Remake at least one figure or create a new one, in light of something you learned in the recent class meetings about visualization design and color. Maybe juxtapose your first attempt and what you obtained after some time spent working on it. Reflect on the differences. If using Gapminder, you can use the country or continent color scheme that ships with Gapminder. Consult the dimensions listed in All the Graph Things.
 
-http://stat545.com/graph00_index.html
-
 > Then, make a new graph by converting this visual (or another, if you'd like) to a plotly graph. What are some things that plotly makes possible, that are not possible with a regular ggplot2 graph?
 
-```{r initial use of plotly to graph life expectancy in the Americas}
+#### Remake a figure using data viz principles
+
+### Building a better scatterplot
+First, my original plot. 
+
+```{r original life expectancy in the americas plot}
 amer_7_ord %>% 
-  plot_ly(x = ~country, 
-        y = ~lifeExp, 
-        type = "scatter",
-        mode = "markers",
-        opacity = 0.2) %>% 
-    layout(xaxis = list())
-```
-Plotly adds an empty Afghanistan entry here-- perhaps because it's still an empty factor level in this dataset. 
-
-Let's try using factor_drop() to remove empty factor levels. 
-
-```{r remove empty factor levels from Americas data}
-americas <- amer_7_ord %>% 
-  mutate(country = fct_drop(country))
-
-unique(americas$country)
-```
-
-
-
-```{r Original plot of life expectancy in the Americas (lifeExp by country) KIND OF NOT REALLY}
-amer_7_ord %>% 
-  ggplot(aes(lifeExp, country)) +
+  ggplot(aes(country, lifeExp)) +
   geom_point() +
   coord_flip() +
   labs(title = "Life expectancy in the Americas, 1957-2007",
        x = "Life expectancy",
        y = "Country") +
-  theme_light() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) #flip x axis labels
+  theme_light()
 ```
 
-```{r ggplotly to make ggplot into plotly}
-ggplotly(amer_7_ord %>% 
+Now, I'll remake the same plot in a cleaner and more engaging way. 
+
+```{r remake life expectancy by country scatterplot}
+amer_lifeExp_plot <- amer_7_ord %>% 
   ggplot(aes(lifeExp, country)) +
-  geom_point() +
+  geom_point(color = "darkcyan") +
   coord_flip() +
   labs(title = "Life expectancy in the Americas, 1957-2007",
        x = "Life expectancy",
        y = "Country") +
   theme_light() +
-  theme(axis.text.x = element_text(angle = 270, hjust = 1)) +
-  theme(panel.grid = element_blank(),
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, color = "grey50")) +
+  theme(axis.text.y = element_text(color = "grey50")) +
+  theme(panel.grid.major.x= element_blank(), 
+        panel.grid.minor.y = element_blank(),
         panel.border = element_blank(),
-        axis.ticks = element_blank()))
-    
+        axis.ticks = element_blank()) +
+  theme(text=element_text(size = 10, family = "Arial", color = "grey30"))
+
+amer_lifeExp_plot 
+  
 ```
 
+In the new plot, I've removed most of the lines as they were unnecessary for understanding the data but provided visual clutter. I changed the text colors to provide a visual hierarchy that emphasizes the title and axis labels. I've added color to the points, but only to provide visual interest-- it could just as easily be made black and white. 
 
 
-```{r same americas plot but using plotly syntax instead of ggplotly}
-americas %>% 
-  plot_ly(x = ~country, 
-        y = ~lifeExp,
-        type = "scatter",
-        mode = "markers",
-        hoverinfo = 'text',
-        text = ~paste(country, '', lifeExp), # custom hover text
-        yaxis = list(hoverformat = '.2f')) # trying to get number of hover decimals down but not working
-```
+### Mapping in ggplot2 vs. plotly
 
+#### Data wrangling for mapping: 
+Before I can map, I need some data! 
 
-
+Quickly, I'm going to modify some ggplot map code that I wrote for the Gapminder dataset for a previous assignment. I really wanted to revisit a map similar to one I had already made for [hw04](https://github.com/STAT545-UBC-students/hw04-MielleM/blob/master/hw04.md) to see if I could improve its usability.
 
 ```{r set up Americas life expectancy data, geographic data}
 
@@ -267,12 +249,97 @@ americas07 <-gapminder %>%
   filter(year == 2007) %>%
   filter(continent == "Americas") %>% 
   rename(region = country) %>% 
-  mutate(region = as.character(region)) %>% #change "region" from factor to character 
+  mutate(region = as.character(region)) %>% 
   mutate(region = ifelse(region == "United States", "USA", region))
 
-americasgeog <- right_join(world, americas07, by = "region") #join world geographic data to north america data
+americasgeog <- right_join(world, americas07, by = "region") 
 
 ```
+
+#### Static map in ggplot2
+
+```{r map of life expectancy in the americas, using ggplot2}
+gg <- ggplot() + 
+  geom_polygon(data = americasgeog,
+               aes(x=long,
+                   y = lat,
+                   group = group,
+                   fill = lifeExp,
+                   text = paste(region, "</b> \n", round(lifeExp,1), "years"))) + 
+  coord_map("mollweide") +
+  scale_fill_distiller(palette = 4, direction = 1, "Life\nexpectancy") + 
+  theme_void() +
+  theme(panel.grid = element_blank()) + # remove x axis bar
+  ggtitle("Life expectancy in the Americas, 2007")
+gg
+```
+
+#### Interactive map in with ggplotly
+
+Here's the same map as above, but made interactive through the magic of ggplotly. Try hovering your mouse over a country to see the name and life expectancy for 2007. 
+
+```{r interactive map of life expectancy in the Americas, using ggplotly}
+ggplotly(gg, tooltip = "text") #hover labels life expectancy
+```
+
+I find the interactive potential of plotly to be quite exciting for its application to maps. In a static map, I would have an extremely messy time labeling all these countries. With an interactive map, the user can read the hover text if they want to, or zoom in to get a better look -- all without cluttering the map with a bunch of labels.
+
+
+
+
+### Using plotly syntax
+As a bit of a bonus exercise, I'm going to try using plotly syntax (instead of piping ggplot2 into ggplotly) to recreate the original scatter plot of life expectancy in the Americas. I won't spend as much time here making it look nice. 
+
+```{r initial use of plotly to graph life expectancy in the Americas}
+amer_7_ord %>% 
+  plot_ly(x = ~country, 
+        y = ~lifeExp, 
+        type = "scatter",
+        mode = "markers") %>% 
+    layout(xaxis = list())
+```
+Plotly adds an empty Afghanistan entry here-- perhaps because it's still an empty factor level in this dataset. This doesn't happen with ggplot2, so there must be something a bit different in the defaults for how plotly builds figures. 
+
+Let's try using factor_drop() to remove empty factor levels, and unique() to make sure levels were removed.  
+
+```{r remove empty factor levels from Americas data}
+americas <- amer_7_ord %>% 
+  mutate(country = fct_drop(country))
+
+unique(americas$country)
+```
+
+Now that we know only countries from the Americas are levels in the country factor, I'll plot it again. 
+
+```{r re-plot americas data without missing levels}
+  americas %>% 
+  plot_ly(x = ~country, 
+        y = ~lifeExp, 
+        type = "scatter",
+        mode = "markers") %>% 
+    layout(xaxis = list())
+```
+This worked! Maybe in the future, I'll play around more with plotly syntax. 
+
+
+#### Data wrangling for mapping: 
+
+```{r set up Americas life expectancy data, geographic data}
+
+world <- map_data("world")
+
+americas07 <-gapminder %>%
+  filter(year == 2007) %>%
+  filter(continent == "Americas") %>% 
+  rename(region = country) %>% 
+  mutate(region = as.character(region)) %>% 
+  mutate(region = ifelse(region == "United States", "USA", region))
+
+americasgeog <- right_join(world, americas07, by = "region") 
+
+```
+
+#### Interactive map in ggplotly: 
 
 ```{r interactive map of life expectancy in the Americas, using ggplotly}
 
@@ -282,74 +349,52 @@ gg <- ggplot() +
                    y = lat,
                    group = group,
                    fill = lifeExp,
-                   text = paste(region, "</b> \n", lifeExp, "years"))) + #set hover text
-  coord_map("mollweide") + # set projection
-  scale_fill_distiller(palette = 4, direction = 1, "Life\nexpectancy") + #setting color scheme and legend title
+                   text = paste(region, "</b> \n", round(lifeExp,1), "years"))) + 
+  coord_map("mollweide") +
+  scale_fill_distiller(palette = 4, direction = 1, "Life\nexpectancy") + 
   theme_void() +
   theme(panel.grid = element_blank()) + # remove x axis bar
   ggtitle("Life expectancy in the Americas, 2007")
 
 ggplotly(gg, tooltip = "text") #hover labels life expectancy
 
-NEXT UP: make legend nicer, maybe change text, try more to get significant digits down to 1
-
 ```
-
-
-```{r choropleth map USA}
-geogusa <- list(
-  scope = 'usa',
-  projection = list(type = 'albers usa'))
-
-plot_geo() %>% 
-  add_trace(
-    z = ~density, text = state.name,
-    locations = state.abb, locationmode = 'USA-states'
-  ) %>% 
-    add_markers(
-    x = state.center[["x"]], y = state.center[["y"]], 
-    size = I(2), symbol = I(8), color = I("white"), hoverinfo = "none"
-  ) %>%
-  layout(geo = geogusa)
-
-
-```
-
-
-```{r choropleth map americas}
-g <- list(
-  scope = c('canada', 'usa', 'mexico'),
-  projection = list(type = 'mercator'))
-
-plot_geo() %>% 
-  add_trace(
-    z = ~americas$lifeExp,
-    locations = , locationmode = "country names") %>% 
-
-layout(geo = g)
- 
-#text = americas$lifeExp,
-```
-
-
-
-
 
 
 
 ## Part 4: Writing figures to file
 
-Use ggsave() to explicitly save a plot to file. Then use ![Alt text] (/path/to/img.png) to load and embed it in your report. You can play around with various options, such as:
+> Use ggsave() to explicitly save a plot to file. Then use ![Alt text] (/path/to/img.png) to load and embed it in your report. You can play around with various options, such as:
 
-    Arguments of ggsave(), such as width, height, resolution or text scaling.
-    Various graphics devices, e.g. a vector vs. raster format.
-    Explicit provision of the plot object p via ggsave(..., plot = p). Show a situation in which this actually matters.
-
-
+  >  Arguments of ggsave(), such as width, height, resolution or text scaling.
+  >  Various graphics devices, e.g. a vector vs. raster format.
+  >   Explicit provision of the plot object p via ggsave(..., plot = p). Show a situation in which this actually matters.
 
 
+To specify which plot will be saved, I'm going to add `plot =`. This is usually a good idea, as if I don't specify which plot, ggsave will use the most recent plot created. If I later re-order my code chunks or add another plot, it will now save the wrong one. In my opinion, it's better to explicitly name the desired plot, even if it's not totally necessary. 
 
-## Thanks! 
+If I don't specify a file destination, the exported files will end up in the same folder as my assignment 5 R project. I've specified my homework 5 repo as the destination for the png image, which I've linked to below. 
+
+I don't think SVGs can be exported directly to github, so you'll have to take my word for it that the svg export completed successfully on my home computer. Notice that as SVGs are vector images, there's no need to include dimensions (width + height in units) or a resolution (e.g. 300 dots per inch). 
+
+```{r using ggsave to save plots}
+
+#png 
+ggsave("lifeExp6x4.png", plot = amer_lifeExp_plot, device = "png", path = "https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/test_images/", width = 6, height = 4, units = "in", dpi = 300)
+
+#svg
+ggsave("lifeExp6x4.svg", plot = amer_lifeExp_plot, device = "svg")
+
+#pdf
+# ggsave("lifeExp6x4.pdf", plot = amer_lifeExp_plot, device = "pdf", dpi = 300)
+
+```
+
+Check out the [plot](https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/test_images/lifeExp6x4.png) that I uploaded to my github repo. 
+
+The pdf export had some issues with recognizing font type, so I haven't uploaded it. 
+
+## Thanks to: 
 
 - [tidyverse cheat sheet](https://www.rstudio.com/resources/cheatsheets/)
 - [forcats guide](https://www.rdocumentation.org/packages/forcats/versions/0.3.0/topics/fct_reorder)
@@ -363,3 +408,6 @@ Use ggsave() to explicitly save a plot to file. Then use ![Alt text] (/path/to/i
 - [plotly cheat sheet](https://images.plot.ly/plotly-documentation/images/r_cheat_sheet.pdf)
 - [plotly help](https://www.rdocumentation.org/packages/plotly/versions/4.8.0)
 - [ggplotly hover labels assistance](https://blog.cpsievert.me/2018/01/30/learning-improving-ggplotly-geom-sf/)
+- [changing fonts](https://fibosworld.wordpress.com/2013/02/17/change-fonts-in-ggplot2-and-create-xkcd-style-graphs/)
+- [ggplot2 colors](http://sape.inf.usi.ch/quick-reference/ggplot2/colour)
+- [ggsave](https://ggplot2.tidyverse.org/reference/ggsave.html)
