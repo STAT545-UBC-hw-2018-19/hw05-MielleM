@@ -2,9 +2,10 @@
 title: "hw05: Factor management and visualization"
 author: "MielleM"
 output:
-  html_document:
+  github_document:
     toc: true
     toc_depth: 4
+always_allow_html: yes
 ---
 
 ## Getting started 
@@ -236,6 +237,8 @@ In the new plot, I've removed most of the lines as they were unnecessary for und
 
 ### Mapping in ggplot2 vs. plotly
 
+I'm now introducing `plotly()`, which doesn't render in github markdown. Please see the [plotly md]() in my homework 5 repo for downloadable code chucks that will faithfully reproduce what you see here as plotly graphs. 
+
 #### Data wrangling for mapping: 
 Before I can map, I need some data! 
 
@@ -274,12 +277,14 @@ gg <- ggplot() +
 gg
 ```
 
-#### Interactive map in with ggplotly
+#### Interactive mapping with ggplotly
 
 Here's the same map as above, but made interactive through the magic of ggplotly. Try hovering your mouse over a country to see the name and life expectancy for 2007. 
 
 ```{r interactive map of life expectancy in the Americas, using ggplotly}
+
 ggplotly(gg, tooltip = "text") #hover labels life expectancy
+
 ```
 
 I find the interactive potential of plotly to be quite exciting for its application to maps. In a static map, I would have an extremely messy time labeling all these countries. With an interactive map, the user can read the hover text if they want to, or zoom in to get a better look -- all without cluttering the map with a bunch of labels.
@@ -320,46 +325,6 @@ Now that we know only countries from the Americas are levels in the country fact
     layout(xaxis = list())
 ```
 This worked! Maybe in the future, I'll play around more with plotly syntax. 
-
-
-#### Data wrangling for mapping: 
-
-```{r set up Americas life expectancy data, geographic data}
-
-world <- map_data("world")
-
-americas07 <-gapminder %>%
-  filter(year == 2007) %>%
-  filter(continent == "Americas") %>% 
-  rename(region = country) %>% 
-  mutate(region = as.character(region)) %>% 
-  mutate(region = ifelse(region == "United States", "USA", region))
-
-americasgeog <- right_join(world, americas07, by = "region") 
-
-```
-
-#### Interactive map in ggplotly: 
-
-```{r interactive map of life expectancy in the Americas, using ggplotly}
-
-gg <- ggplot() + 
-  geom_polygon(data = americasgeog,
-               aes(x=long,
-                   y = lat,
-                   group = group,
-                   fill = lifeExp,
-                   text = paste(region, "</b> \n", round(lifeExp,1), "years"))) + 
-  coord_map("mollweide") +
-  scale_fill_distiller(palette = 4, direction = 1, "Life\nexpectancy") + 
-  theme_void() +
-  theme(panel.grid = element_blank()) + # remove x axis bar
-  ggtitle("Life expectancy in the Americas, 2007")
-
-ggplotly(gg, tooltip = "text") #hover labels life expectancy
-
-```
-
 
 
 ## Part 4: Writing figures to file
