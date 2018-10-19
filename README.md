@@ -44,10 +44,6 @@ This repository holds the results of [my](https://github.com/MielleM) experiment
 <td>Rmd used to generate .md, just for reference + storage.</td>
 </tr>
 <tr class="odd">
-<td><a href="https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/hw05.html">html file</a></td>
-<td>html file with plotly properly displayed-- can't display on GitHub</td>
-</tr>
-<tr class="even">
 <td><a href="https://github.com/STAT545-UBC-students/hw05-MielleM/tree/master/test_images">test_images folder</a></td>
 <td>Test export .png and .svg images</td>
 </tr>
