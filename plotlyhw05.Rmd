@@ -1,0 +1,112 @@
+---
+title: "hw05 plotly graphs"
+author: "MielleM"
+output:
+  github_document:
+    toc: true
+    toc_depth: 4
+always_allow_html: yes
+---
+
+## Getting started 
+
+```{r getting started}
+suppressPackageStartupMessages(library(gapminder))
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(maps))
+```
+
+### Interactive mapping
+
+#### Map data setup 
+```{r set up Americas life expectancy data, geographic data}
+
+world <- map_data("world")
+
+americas07 <-gapminder %>%
+  filter(year == 2007) %>%
+  filter(continent == "Americas") %>% 
+  rename(region = country) %>% 
+  mutate(region = as.character(region)) %>% 
+  mutate(region = ifelse(region == "United States", "USA", region))
+
+americasgeog <- right_join(world, americas07, by = "region") 
+
+``` 
+
+```{r map of life expectancy in the americas, using ggplot2}
+gg <- ggplot() + 
+  geom_polygon(data = americasgeog,
+               aes(x=long,
+                   y = lat,
+                   group = group,
+                   fill = lifeExp,
+                   text = paste(region, "</b> \n", round(lifeExp,1), "years"))) + 
+  coord_map("mollweide") +
+  scale_fill_distiller(palette = 4, direction = 1, "Life\nexpectancy") + 
+  theme_void() +
+  theme(panel.grid = element_blank()) + # remove x axis bar
+  ggtitle("Life expectancy in the Americas, 2007")
+gg
+```
+
+#### Interactive map in with ggplotly
+
+Here's the same map as above, but made interactive through the magic of ggplotly. Try hovering your mouse over a country to see the name and life expectancy for 2007. 
+
+```{r interactive map of life expectancy in the Americas, using ggplotly}
+
+ggplotly(gg, tooltip = "text") #hover labels life expectancy
+
+```
+
+I find the interactive potential of plotly to be quite exciting for its application to maps. In a static map, I would have an extremely messy time labeling all these countries. With an interactive map, the user can read the hover text if they want to, or zoom in to get a better look -- all without cluttering the map with a bunch of labels.
+
+
+
+
+### Using plotly syntax
+As a bit of a bonus exercise, I'm going to try using plotly syntax (instead of piping ggplot2 into ggplotly) to recreate the original scatter plot of life expectancy in the Americas. I won't spend as much time here making it look nice. 
+
+```{r data wrangling for plotly life expectancy}
+amer_7 <- gapminder %>% 
+  filter(continent == "Americas") %>% 
+  filter(str_detect(year, "7$"))
+
+amer_7_ord <- amer_7 %>%   
+  mutate(country = fct_reorder(country, lifeExp, .fun = median))
+```
+
+```{r initial use of plotly to graph life expectancy in the Americas}
+amer_7_ord %>% 
+  plot_ly(x = ~country, 
+        y = ~lifeExp, 
+        type = "scatter",
+        mode = "markers") %>% 
+    layout(xaxis = list())
+```
+Plotly adds an empty Afghanistan entry here-- perhaps because it's still an empty factor level in this dataset. This doesn't happen with ggplot2, so there must be something a bit different in the defaults for how plotly builds figures. 
+
+Let's try using factor_drop() to remove empty factor levels, and unique() to make sure levels were removed.  
+
+```{r remove empty factor levels from Americas data}
+americas <- amer_7_ord %>% 
+  mutate(country = fct_drop(country))
+
+unique(americas$country)
+```
+
+Now that we know only countries from the Americas are levels in the country factor, I'll plot it again. 
+
+```{r re-plot americas data without missing levels}
+  americas %>% 
+  plot_ly(x = ~country, 
+        y = ~lifeExp, 
+        type = "scatter",
+        mode = "markers") %>% 
+    layout(xaxis = list())
+```
+This worked! Maybe in the future, I'll play around more with plotly syntax. 
+
+
