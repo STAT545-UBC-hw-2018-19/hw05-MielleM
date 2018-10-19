@@ -25,19 +25,17 @@ This repository holds the results of [my](https://github.com/MielleM) experiment
 </tr>
 <tr class="even">
 <td><a href="https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/hw05.md">hw05.md</a></td>
-<td>The good stuff! Markdown file with hw05 assignment.</td>
+<td>The good stuff! Markdown file with hw05 assignment. Missing correctly displayed plotly graphs.</td>
 </tr>
 <tr class="odd">
+<td><a href="https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/plotlyhw05.Rmd">Plotly .rmd supplement</a></td>
+<td>self-containing .Rmd code containing plotly interactive graphs</td>
+</tr>
+<tr class="even">
 <td><a href="https://github.com/STAT545-UBC-students/hw05-MielleM/tree/master/hw05_files/figure-markdown_github">hw05_files</a></td>
 <td>contains graph images to display in .md file</td>
 </tr>
-<tr class="even">
-<td><a href="https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/hw05.Rmd">hw05.Rmd</a></td>
-<td>Rmd used to generate .md, just for reference + storage.</td>
-</tr>
-<tr class="odd">
-<td><a href="https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/.gitignore">.gitignore</a></td>
-<td>Git ignore</td>
-</tr>
 </tbody>
 </table>
+
+[plotlyhw05\_files](https://github.com/STAT545-UBC-students/hw05-MielleM/tree/master/plotlyhw05_files) [hw05.Rmd](https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/hw05.Rmd) | Rmd used to generate .md, just for reference + storage. [html file](https://github.com/STAT545-UBC-students/hw05-MielleM/blob/master/hw05.html) | html file with plotly properly displayed-- can't display on GitHub [test\_images folder](https://github.com/STAT545-UBC-students/hw05-MielleM/tree/master/test_images) | Test export .png and .svg images
